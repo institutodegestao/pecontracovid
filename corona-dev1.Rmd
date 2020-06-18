@@ -1,0 +1,660 @@
+---
+title: "COVID-19 no Mundo, no Brasil e em Pernambuco"
+output:
+   flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    navbar:
+      - { title: "Dados", href: "http://dados.seplag.pe.gov.br/apps/corona_dados.html", align: left }
+    includes:
+       in_header: header.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(leaflet)
+library(ggplot2)
+library(emojifont)
+library(sjmisc)
+library(sjlabelled)
+library(jtools)
+library(wesanderson)
+library(zoo)
+library(jtools)
+library(plotly)
+library(papeR)
+library(gplots)
+library(formattable)
+library(ggthemes)
+library(sjPlot)
+library(readxl)
+library(kableExtra)
+library(xlsx)
+library(reshape2)
+library(htmltools)
+library(htmlwidgets)
+library(xml2)
+library(dplyr)
+library(rvest)
+library(lubridate)
+library(tidyr)
+library(incidence)
+library(flexdashboard)
+library(readxl)
+library(DT)
+library(dplyr) # comandos pip
+library(flexdashboard) # dashboard
+library(formattable) # formatações
+library(gplots) # gráficos
+library(lubridate) # datas
+library(plotly) # gráficos
+library(reshape2)
+library(leaflet)
+library("data.table")
+library("sp")
+library("rgdal")
+library("maptools")
+library("KernSmooth")
+library(raster)
+library(sf)
+library(tmap)
+library(dplyr)
+library(sp)
+library(spdep)
+library(leaflet.extras)
+library(mullenMisc)
+library(arules)
+
+source('./global_regulador.R')
+
+confirmados = read.csv('../pernambuco/resultado_geolocalizacao/geo_confirmados.csv', sep = ';', encoding = 'UTF-8')
+
+confirmados$dt_notificacao <- as.Date(confirmados$dt_notificacao, format = "%d/%m/%y")
+
+# confirmados <- confirmados[,c(2, 3, 8, 13)]
+
+confirmados$lat <- as.numeric(as.character(as.factor(confirmados$lat)))
+
+confirmados$lng <- as.numeric(as.character(as.factor(confirmados$lng)))
+
+confirmados$semana <- week(confirmados$dt_notificacao)
+
+confirmados <- subset(confirmados, lat >= -9.4 & lat <= -3.83 & lng >= -40.6 & lng <= -32.3)
+
+confirmados$evolucao <- ifelse(confirmados$evolucao == 'RECUPERADO', 'RECUPERADO', ifelse(confirmados$evolucao == 'ÓBITO', 'ÓBITO', 'CONFIRMADO'))
+
+confirmados.split <- split(confirmados, confirmados$evolucao)
+
+confirmados$latJ <- jitter_latlong(confirmados$lat, type = "lat", km = 50/1000)
+confirmados$lngJ <- jitter_latlong(confirmados$lng, type = "long", lat = -35, km = 50/1000)
+
+confirmadosJ <- confirmados[,c(3,6,7)]
+colnames(confirmadosJ)[c(2,3)] <- c('lat', 'lng')
+
+confirmados_rec <- subset(confirmados, nm_municipio == 'RECIFE' & lat >= -8.16 & lat <= -7.93 & lng >= -35.1 & lng <= -34.85)
+
+confirmados_rec_bkde <- confirmados_rec[, c('lng', 'lat')]
+
+confirmados_olinda <- subset(confirmados, nm_municipio == 'OLINDA' & lat >= -8.04 & lat <= -7.96 & lng >= -34.93 & lng <= -34.83)
+
+confirmados_olinda_bkde <- confirmados_olinda[, c('lng', 'lat')]
+
+confirmados_jaboatao <- subset(confirmados, nm_municipio == 'JABOATÃO DOS GUARARAPES')
+
+confirmados_jaboatao_bkde <- confirmados_jaboatao[, c('lng', 'lat')]
+
+fontes <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 1)
+
+fontes <- fontes[, 1:4]
+fontes <- subset(fontes, Tipo == 'Dados')
+
+metadados <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 6)
+
+basevig <- read.csv2('C:/Users/hugo.vasconcelos/ownCloud2/Corona/Bases/pernambuco/resultado/base_vig.csv', sep = ';')
+
+basevig$faixa_etaria <- discretize(basevig$Idade, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, Inf), method = 'fixed', labels = c("0-9 anos", '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos', '50-59 anos', '60-69 anos', '70-79 anos', '80+ anos'))
+
+basevig <- basevig[,-c(2,4)]
+
+basevig$dt_notificacao <- as.Date(basevig$dt_notificacao, format = "%d/%m/%y")
+basevig$dt_obito <- as.Date(basevig$dt_obito, format = "%d/%m/%y")
+basevig$dt_primeiros_sintomas <- as.Date(basevig$dt_primeiros_sintomas, format = "%d/%m/%y")
+
+evolucao_geral <- read.xlsx('../pernambuco/bases/evolucao geral.xlsx', sheetIndex = 1)
+
+evolucao_geral[, 5] <- round(evolucao_geral[, 5], 3)
+evolucao_geral[, 7] <- round(evolucao_geral[, 7], 3)
+evolucao_geral[, 9] <- round(evolucao_geral[, 9], 3)
+evolucao_geral[, 11] <- round(evolucao_geral[, 11], 3)
+evolucao_geral[, 13] <- round(evolucao_geral[, 13], 3)
+evolucao_geral[, 18] <- round(evolucao_geral[, 18], 3)
+evolucao_geral[, 20] <- round(evolucao_geral[, 20], 3)
+```
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150020651-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-150020651-2');
+</script>
+
+Painel {data-icon="fa-signal"}
+===================================== 
+
+Row {data-height=600}
+-------------------------------------
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150020651-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-150020651-2');
+</script>
+
+<div id="Container"
+ style="padding-bottom:56.25%; position:relative; display:block; width: 100%">
+
+<iframe width="100%" height="80%" src="https://app.powerbi.com/view?r=eyJrIjoiY2QwMzkxMDItZjcxOS00ZGZlLThmOWEtZDNmZjlkNDU4MWQwIiwidCI6IjA5NWY4NjAxLTRhOWEtNDQ5MC1hODBkLWJmMTA4NTliODkxMCJ9" frameborder="0" allowFullScreen="TRUE" style="position:absolute; top:0; left: 0">
+</iframe>
+
+</div>
+
+### Conheca outras plataformas de dados de Pernambuco {data-height=350}
+
+<a href="https://dados.seplag.pe.gov.br/apps/pe_em_dados.html" target="_blank">Pernambuco em Dados</a>
+
+<a href="http://web.transparencia.pe.gov.br/dados-abertos/" target="_blank">Dados Abertos</a>
+
+<a href="http://web.transparencia.pe.gov.br/fiscalizacao-e-controle/covid-19/" target="_blank">Transparência covid19</a>
+
+Mapas {data-icon="fa-map"}
+===================================== 
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150020651-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-150020651-2');
+</script>
+
+<div class = "row">
+<div class = "col-md-8">
+
+```{r}
+tags$p('Casos graves de covid-19', style = "font-size: 150%;")
+
+tags$p('Para uma maior precisão, são apresentados apenas os casos de covid-19 com sintomas de Síndrome respiratória aguda grave (SRAG)', style = "font-size: 150%;")
+
+tags$p('Para preservar as pessoas, os pontos nos mapas são  deslocados aleatoriamente num raio de até 50 metros do local real', style = "color: red; font-size: 100%;")
+
+tags$p('Os círculos não correspondem à localização exata do fato e representam a região aproximada em 50m de ocorrência do caso', style = "color: red; font-size: 120%;")
+```
+
+</div>
+
+<div class = "col-md-4" style="text-align:center;">
+
+<img src="atende_em_casa_cir.png" class="center" width="20%">
+
+```{r}
+tags$p('Está sentido algum sintoma?', style = "color: black; font-size: 100%; font-weight: bold;")
+```
+<a href="https://play.google.com/store/apps/details?id=br.brainy.atende_em_casa" target="_blank">Baixe o Atende em Casa</a>
+<a href="https://www.atendeemcasa.pe.gov.br/login" target="_blank"><br> Ou acesse o site</a>
+
+```{r}
+tags$p('#ficaemcasa', style = "color: black; font-size: 120%; font-weight: bold;")
+```
+
+</div>
+</div>
+
+Row {.tabset .tabset-fade data-height=500}
+-------------------------------------
+
+### Conglomerados
+
+```{r}
+
+l <- leaflet() %>% addTiles(options = providerTileOptions( updateWhenZooming = FALSE,  updateWhenIdle = TRUE))
+
+names(confirmados.split) %>%
+  purrr::walk( function(df) {
+    l <<- l %>%
+      addCircleMarkers(data=confirmados.split[[df]], , lng=~lng, lat=~lat, group = df, radius = 50, clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F), labelOptions = labelOptions(noHide = F, direction = 'auto')) 
+  })
+
+l %>% addLayersControl(overlayGroups = names(confirmados.split), options = layersControlOptions(collapsed = FALSE)) %>% addLegend(position = "bottomright", colors = 'white',  opacity = 0.5, labels = '', title = '#ficaemcasa')
+
+# leaflet(confirmados, height="100%", width="100%") %>% addTiles(options = providerTileOptions(
+#   updateWhenZooming = FALSE,  updateWhenIdle = TRUE)) %>% addCircleMarkers(radius = 50,
+#   clusterOptions = markerClusterOptions()) %>% addLegend(position = "bottomright", colors = 'white',  opacity = 0.5, labels = '', title = '#ficaemcasa') %>%
+#   addLayersControl(
+#     overlayGroups = names(confirmados.split),
+#     options = layersControlOptions(collapsed = FALSE)
+#   )
+```
+
+<!-- ### Conglomerados -->
+
+<!-- ```{r} -->
+<!-- leaflet(confirmadosJ, height="100%", width="100%") %>% addTiles(options = tileOptions(maxZoom = 15)) %>% addMarkers( -->
+<!--   clusterOptions = markerClusterOptions()) %>% addLegend(position = "bottomright", colors = 'white', -->
+<!--   opacity = 0.5, labels = '', title = '#ficaemcasa') -->
+<!-- ``` -->
+
+### Bairros - Recife
+
+```{r}
+shp_name <- "RM_Recife/Shapes_RM Recife/bairros-polygon.shp"
+recife_lsoa <- st_read(shp_name, quiet = TRUE)
+
+confirmados_spatial = st_as_sf(confirmados_rec, coords = c("lng", "lat"), crs = 4326, agr = "constant")
+
+confirmados_mc <- st_intersects(recife_lsoa, confirmados_spatial)
+
+confirmados_mc <- confirmados_spatial[unlist(confirmados_mc),]
+
+confirmados_por_bairro <- confirmados_mc %>% 
+  st_join(recife_lsoa, ., left = FALSE) %>% 
+  count(bairro_nom)
+
+confirmados_por_bairro_dt <- confirmados_mc %>% 
+  st_join(recife_lsoa, ., left = FALSE) %>% 
+  count(bairro_nom, semana)
+
+confirmados_por_bairro <- rename(confirmados_por_bairro, Confirmados = n)
+
+confirmados_por_bairro_dt <- rename(confirmados_por_bairro_dt, Confirmados = n)
+
+tmap_mode("view")
+tm_shape(confirmados_por_bairro) + tm_fill("Confirmados", style = "quantile", palette = "YlOrRd") +  tm_borders(alpha = 0.1) +  tm_layout(main.title = "Confirmados Covid-19", main.title.size = 0.7 , legend.position = c("left", "bottom"), legend.title.size = 0.8) 
+```
+
+### Bairros - Recife - Evolução
+
+```{r}
+tmap_mode("plot")
+tm_shape(confirmados_por_bairro_dt) + 
+  tm_fill("Confirmados") +
+  tm_borders() +
+  tm_facets("semana",  free.coords=FALSE)
+```
+
+### Mapa de Calor - Recife
+
+```{r}
+require(raster)
+kde <- bkde2D(confirmados_rec_bkde,bandwidth=c(.0045, .0068), gridsize = c(1000,1000))
+KernelDensityRaster <- raster(list(x=kde$x1 ,y=kde$x2 ,z = kde$fhat))
+
+KernelDensityRaster@data@values[which(KernelDensityRaster@data@values < 1)] <- NA
+
+palRaster <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster@data@values, na.color = "transparent")
+
+leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster, colors = palRaster, opacity = .8) %>% addLegend(pal = palRaster, values = KernelDensityRaster@data@values, title = "Mapa de Calor - Kernel")
+```
+
+### Mapa de Calor - Olinda
+
+```{r}
+kde_olinda <- bkde2D(confirmados_olinda_bkde,bandwidth=c(.0045, .0068), gridsize = c(1000,1000))
+KernelDensityRaster_olinda <- raster(list(x=kde_olinda$x1 ,y=kde_olinda$x2, z = kde_olinda$fhat))
+
+KernelDensityRaster_olinda@data@values[which(KernelDensityRaster_olinda@data@values < 1)] <- NA
+
+palRaster_olinda <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster_olinda@data@values, na.color = "transparent")
+
+leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster_olinda, colors = palRaster_olinda, opacity = .8) %>% addLegend(pal = palRaster_olinda, values = KernelDensityRaster_olinda@data@values, title = "Mapa de Calor - Kernel")
+```
+
+### Mapa de Calor - Jaboatão
+
+```{r}
+kde_jaboatao <- bkde2D(confirmados_jaboatao_bkde,bandwidth=c(.0045, .0068), gridsize = c(1000,1000))
+KernelDensityRaster_jaboatao <- raster(list(x=kde_jaboatao$x1 ,y=kde_jaboatao$x2, z = kde_jaboatao$fhat))
+
+KernelDensityRaster_jaboatao@data@values[which(KernelDensityRaster_jaboatao@data@values < 1)] <- NA
+
+palRaster_jaboatao <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster_jaboatao@data@values, na.color = "transparent")
+
+leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster_jaboatao, colors = palRaster_jaboatao, opacity = .8) %>% addLegend(pal = palRaster_jaboatao, values = KernelDensityRaster_jaboatao@data@values, title = "Mapa de Calor - Kernel")
+```
+
+Regulação SRAG {data-icon="fa-file-medical"}
+===================================== 
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox('Leitos Totais em Pernambuco')`
+
+```{r}
+
+leitos <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'INATIVO') %>% summarize(total = sum(leito_oper))
+
+valueBox(leitos)
+```
+
+### `r valueBox('UTI em Pernambuco')`
+
+```{r}
+
+leitos <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'INATIVO' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper))
+
+valueBox(leitos)
+```
+
+### `r valueBox('Enfermaria em Pernambuco')`
+
+```{r}
+
+leitos <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'INATIVO' & tipo_leito2 == 'ENFERMARIA') %>% summarize(total = sum(leito_oper))
+
+valueBox(leitos)
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox('Ocupacao Total em Pernambuco')`
+
+```{r}
+
+abs_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE') %>% summarize(total = sum(leito_oper))
+
+abs_leitosLivres <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial == 'LIVRE') %>% summarize(total = sum(leito_oper))
+
+rel_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE') %>% summarize(total = sum(leito_oper)) / leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'BLOQUEADO' & status_inicial != 'INATIVO') %>% summarize(total = sum(leito_oper)) 
+
+  valueBox(
+  paste(paste(abs_leitosOcup, 'Oc'), ' | ', paste(abs_leitosLivres, 'Lv'),  ' | ', percent(rel_leitosOcup,0)), color = ifelse(rel_leitosOcup > 0.95, "danger", ifelse(rel_leitosOcup > 0.85, 'warning', "success")))
+
+```
+
+### `r valueBox('Ocupacao UTI em Pernambuco')`
+
+```{r}
+
+abs_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper))
+
+abs_leitosLivres <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial == 'LIVRE' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper))
+
+rel_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper)) / leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'BLOQUEADO' & status_inicial != 'INATIVO' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper)) 
+
+valueBox(
+  paste(paste(abs_leitosOcup, 'Oc'), ' | ', paste(abs_leitosLivres, 'Lv'),  ' | ', percent(rel_leitosOcup,0)), color = ifelse(rel_leitosOcup > 0.95, "danger", ifelse(rel_leitosOcup > 0.85, 'warning', "success")))  
+
+```
+
+### `r valueBox('Ocupacao Enfermaria em Pernambuco')`
+
+```{r}
+abs_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE' & tipo_leito2 != 'UTI') %>% summarize(total = sum(leito_oper))
+
+abs_leitosLivres <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial == 'LIVRE' & tipo_leito2 != 'UTI') %>% summarize(total = sum(leito_oper))
+
+rel_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE' & tipo_leito2 != 'UTI') %>% summarize(total = sum(leito_oper)) / leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'BLOQUEADO' & status_inicial != 'INATIVO' & tipo_leito2 != 'UTI') %>% summarize(total = sum(leito_oper)) 
+
+valueBox(
+  paste(paste(abs_leitosOcup, 'Oc'), ' | ', paste(abs_leitosLivres, 'Lv'),  ' | ', percent(rel_leitosOcup,0)), color = ifelse(rel_leitosOcup > 0.95, "danger", ifelse(rel_leitosOcup > 0.85, 'warning', "success")))
+
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox(paste('Internações em', max_dt_leito-1))`
+
+```{r}
+
+  int_hoje <- int_pac %>% filter(data_int == max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+
+  valueBox(int_hoje)
+
+```
+
+### `r valueBox(paste('Total de Internações até', max_dt_leito-1))`
+
+```{r}
+
+  int_hoje <- int_pac %>% filter(data_int <= max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+
+  valueBox(int_hoje)
+
+```
+
+### `r valueBox(paste('Altas em', max_dt_leito-1))`
+
+```{r}
+
+altas_hoje <- int_pac %>% filter(data_alta == max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+
+valueBox(altas_hoje)
+
+```
+
+### `r valueBox(paste('Total de Altas até', max_dt_leito-1))`
+
+```{r}
+
+altas_hoje <- int_pac %>% filter(data_alta <= max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+
+valueBox(altas_hoje)
+
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox('Solicitacoes Ativas UTI')`
+
+```{r painel solicitacoes ativas uti}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas UTI Adulto')`
+
+```{r painel solicitacoes ativas uti adulto}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & (esp_leito_reg == 'SRAG' | esp_leito_reg == 'SRAG-CARDIOLOGICO' | esp_leito_reg == 'SRAG COVID NEGATIVO') & tipo_leito_reg != 'UTI INFANTIL') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas UTI Infantil')`
+
+```{r painel solicitacoes ativas uti pediatrica}
+
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & esp_leito_reg == 'SRAG' & tipo_leito_reg == 'UTI INFANTIL') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas UTI Neonatal')`
+
+```{r painel solicitacoes ativas uti neo}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & esp_leito_reg == 'SRAG-NEONATOLOGIA' & tipo_leito_reg == 'UTI NEONATAL') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas UTI Obstetrica')`
+
+```{r painel solicitacoes ativas uti obstetrica}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & esp_leito_reg == 'SRAG-OBSTETRICO') %>% summarize(total = sum(lista))
+           )
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox('Solicitacoes Ativas Enfermaria')`
+
+```{r painel solicitacoes ativas enf}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg != 'UTI') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas Enfermaria Adulto')`
+
+```{r painel solicitacoes ativas enf adulto}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg != 'UTI' & tipo_leito_reg != 'PEDIATRICO' & esp_leito_reg != 'SRAG-OBSTETRICO') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas Enfermaria Infantil')`
+
+```{r painel solicitacoes ativas enf pediatrica}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg != 'UTI' & tipo_leito_reg == 'PEDIATRICO') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas Enfermaria Obstetrica')`
+
+```{r painel solicitacoes ativas enf obstetrica}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg != 'UTI' & esp_leito_reg == 'SRAG-OBSTETRICO') %>% summarize(total = sum(lista))
+           )
+```
+
+Row {.tabset .tabset-fade}
+-------------------------------------
+
+### Solicitações Ativas
+
+```{r}
+x <- sol_hist_nova %>% filter(tipo2_leito_reg=='UTI' & dt_base_sol <= max_dt_leito-1) %>% group_by(data = dt_base_sol) %>%  summarize(UTI = sum(lista))
+y <- sol_hist_nova %>% filter(tipo2_leito_reg=='ENFERMARIA' & dt_base_sol <= max_dt_leito-1) %>% group_by(data = dt_base_sol) %>%  summarize(ENFERMARIA = sum(lista))
+z <- merge(x, y, by='data', all = T)
+z <- z %>% replace(is.na(.), 0)
+  
+plotly::plot_ly(data = z) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~UTI+ENFERMARIA,
+    type = 'bar',
+    textposition = 'outside',
+    name = "Total",
+    line = list(color = "orange"),
+    marker = list(color = "orange")
+  ) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~UTI,
+    type = 'scatter', mode = 'lines',
+    textposition = 'outside',
+    name = "UTI",
+    line = list(color = "red"),
+    marker = list(color = "red")
+  ) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~ENFERMARIA,
+    type = 'scatter', mode = 'lines',
+    textposition = 'outside',
+    name = "ENFERMARIA",
+    line = list(color = "blue"),
+    marker = list(color = "blue")
+  ) %>%
+  plotly::layout(
+    yaxis = list(title = "Solicitacoes em fila por dia"),
+    xaxis = list(title = "Data"),
+    hovermode = "compare"
+  )
+```
+
+### Ocupação - UTI
+
+```{r}
+
+z1 <- leito %>% group_by(data = data_ocup) %>% filter(status_inicial != 'LIVRE' & tipo_leito2 == 'UTI' & data_ocup >= '2020-03-20' & data_ocup <= max_dt_leito-1) %>% summarize(leitos1 = sum(leito_oper))
+z2 <- leito %>% group_by(data = data_ocup) %>% filter(tipo_leito2 == 'UTI' & data_ocup >= '2020-03-20') %>% summarize(leitos2 = sum(leito_oper))
+
+baseTaxas <- merge(z1, z2, all = TRUE)
+baseTaxas$ocupacao <- percent(baseTaxas$leitos1 / baseTaxas$leitos2, 2)
+baseTaxas <- baseTaxas[, c(1,4)]
+
+  plotly::plot_ly(data = baseTaxas) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~ocupacao,
+    type = 'scatter', mode = 'lines',
+    text = ~paste(as.integer(ocupacao*100),'%'),
+    textposition = 'outside',
+    name = "Taxa de Ocupacao",
+    line = list(color = "blue"),
+    marker = list(color = "blue")
+  ) %>%
+  plotly::layout(
+    title = "Taxa de Ocupacao em UTI",
+    yaxis = list(title = "Taxa de Ocupacao"),
+    xaxis = list(title = "Data"),
+    legend = list(x = 0.1, y = 0.9),
+    hovermode = "compare"
+  )
+```
+
+### Leitos Totais
+
+```{r}
+leitos <- leito %>% group_by(data = data_ocup, tipo = tipo_leito2) %>% filter(data_ocup <= max_dt_leito-1, status_inicial != 'INATIVO') %>% summarize(total = sum(leito_oper))
+
+leitos <- leitos %>% tidyr::pivot_wider(names_from = c(tipo), values_from = total)
+
+  plotly::plot_ly(data = leitos) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~ENFERMARIA,
+    type = 'bar', 
+    textposition = 'outside',
+    name = "Enfermaria",
+    line = list(color = "blue"),
+    marker = list(color = "blue")
+  ) %>%
+    add_trace(
+    x = ~data,
+    y = ~UTI,
+    type = 'bar', mode = 'lines',
+    textposition = 'outside',
+    name = "UTI",
+    line = list(color = "red"),
+    marker = list(color = "red")
+  ) %>%
+    add_trace(
+    x = ~data,
+    y = ~ENFERMARIA+UTI,
+    type = 'bar', mode = 'lines',
+    textposition = 'outside',
+    name = "Total",
+    line = list(color = "orange"),
+    marker = list(color = "orange")
+  ) %>%
+  plotly::layout(
+    title = "Taxa de Ocupacao em UTI",
+    yaxis = list(title = "Taxa de Ocupacao"),
+    xaxis = list(title = "Data"),
+    legend = list(x = 0.1, y = 0.9),
+    hovermode = "compare"
+  ) %>%
+  rangeslider()
+```
+
+Row {data-height=30}
+-------------------------------------
+
+```{r carga1}
+valueBox(value =  tags$p(paste('Este painel apresenta os dados de leitos de Síndrome Respiratória Aguda Grave (SRAG), no Estado de Pernambuco'), style = "font-size: 100%;"))   
+```
+
+Row {data-height=30}
+-------------------------------------
+
+```{r carga2}
+valueBox(value =  tags$p(paste('Os dados disponíveis seguem como data-base o dia anterior:', 'Data base', max_dt_leito-1), style = "font-size: 100%;"))   
+```

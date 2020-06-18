@@ -1,0 +1,135 @@
+---
+title: "COVID-19 no Mundo, no Brasil e em Pernambuco"
+output:
+   flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    navbar:
+      - { title: "Painel", href: "http://dados.seplag.pe.gov.br/apps/corona.html", align: left }
+    includes:
+       in_header: header.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(formattable)
+library(ggthemes)
+library(readxl)
+library(xlsx)
+library(reshape2)
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(flexdashboard)
+library(DT)
+library("data.table")
+library(mullenMisc)
+library(arules)
+
+fontes <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 1)
+
+fontes <- fontes[, 1:4]
+fontes <- subset(fontes, Tipo == 'Dados')
+
+metadados <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 6)
+
+basevig <- read.csv2('C:/Users/hugo.vasconcelos/ownCloud2/Corona/Bases/pernambuco/resultado/base_vig.csv', sep = ';')
+
+basevig$faixa_etaria <- discretize(basevig$Idade, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, Inf), method = 'fixed', labels = c("0-9 anos", '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos', '50-59 anos', '60-69 anos', '70-79 anos', '80+ anos'))
+
+basevig <- basevig[,-c(2,4,15)]
+
+basevig$dt_notificacao <- as.Date(basevig$dt_notificacao, format = "%d/%m/%y")
+basevig$dt_obito <- as.Date(basevig$dt_obito, format = "%d/%m/%y")
+basevig$dt_primeiros_sintomas <- as.Date(basevig$dt_primeiros_sintomas, format = "%d/%m/%y")
+
+rownames(basevig) <- c()
+
+evolucao_geral <- read.xlsx('../pernambuco/bases/evolucao geral.xlsx', sheetIndex = 1)
+
+evolucao_geral[, 5] <- round(evolucao_geral[, 5], 3)
+evolucao_geral[, 7] <- round(evolucao_geral[, 7], 3)
+evolucao_geral[, 9] <- round(evolucao_geral[, 9], 3)
+evolucao_geral[, 11] <- round(evolucao_geral[, 11], 3)
+evolucao_geral[, 13] <- round(evolucao_geral[, 13], 3)
+evolucao_geral[, 18] <- round(evolucao_geral[, 18], 3)
+evolucao_geral[, 20] <- round(evolucao_geral[, 20], 3)
+```
+
+Dados PE {data-icon="fa-table"}
+===================================== 
+
+<a href="http://opendefinition.org/licenses/odc-odbl/" target="_blank">Licença Aberta para Bases de Dados (ODbL) do Open Data Commons </a>
+
+Row {.tabset data-height=600}
+-------------------------------------
+
+### Base Geral
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+utils::write.table(basevig, 'basegeral.csv', sep = ';', fileEncoding = 'UTF-8', col.names=NA)
+
+fn = 'basegeral.csv'
+rmarkdown::output_metadata$set(rsc_output_files = list(fn))
+write.table(basevig, file=fn, fileEncoding = 'UTF-8', sep =';', row.names = F)
+```
+[`r fn`](`r fn`)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# datatable(basevig,
+#       filter = 'top',
+#       options = list(
+# scrollY = '200px', paging = FALSE, scrollX = TRUE)
+# )
+DT::datatable(basevig, extensions = c('Buttons', 'KeyTable', 'Responsive'), rownames = FALSE, options = list(keys = TRUE, dom = 'frtip')
+)
+```
+
+### Base Sintética
+```{r}
+evolucao_geral <- evolucao_geral %>% arrange(desc(dt_atualizacao))
+DT::datatable(evolucao_geral, extensions = c('Buttons', 'KeyTable', 'Responsive'), rownames = FALSE, options = list(keys = TRUE, dom = 'Bfrtip', buttons = c('csv'))
+)
+```
+
+Metadados {data-icon="fa-info"}
+===================================== 
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150020651-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-150020651-2');
+</script>
+
+Row {data-height=600}
+-------------------------------------
+
+```{r}
+DT::datatable(metadados, extensions = c('Buttons', 'KeyTable', 'Responsive'), rownames = FALSE, options = list(keys = TRUE, dom = 'Bfrtip', buttons = c('csv', 'excel'))
+)
+```
+
+Fontes {data-icon="fa-info"}
+===================================== 
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150020651-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-150020651-2');
+</script>
+
+Row {data-height=600}
+-------------------------------------
+
+```{r}
+DT::datatable(fontes, extensions = c('Buttons', 'KeyTable', 'Responsive'), rownames = FALSE, options = list(keys = TRUE, dom = 'Bfrtip', buttons = c('csv', 'excel'))
+)
+```
+

@@ -1,0 +1,331 @@
+---
+title: "COVID-19 no Mundo, no Brasil e em Pernambuco"
+output:
+   flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    navbar:
+      - { title: "Dados", href: "http://dados.seplag.pe.gov.br/apps/corona_dados.html", align: left }
+    includes:
+       in_header: header.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(leaflet)
+library(ggplot2)
+library(emojifont)
+library(sjmisc)
+library(sjlabelled)
+library(jtools)
+library(wesanderson)
+library(zoo)
+library(jtools)
+library(plotly)
+library(papeR)
+library(gplots)
+library(formattable)
+library(ggthemes)
+library(sjPlot)
+library(readxl)
+library(kableExtra)
+library(xlsx)
+library(reshape2)
+library(htmltools)
+library(htmlwidgets)
+library(xml2)
+library(dplyr)
+library(rvest)
+library(lubridate)
+library(tidyr)
+library(incidence)
+library(flexdashboard)
+library(readxl)
+library(DT)
+library(dplyr) # comandos pip
+library(flexdashboard) # dashboard
+library(formattable) # formatações
+library(gplots) # gráficos
+library(lubridate) # datas
+library(plotly) # gráficos
+library(reshape2)
+library(leaflet)
+library("data.table")
+library("sp")
+library("rgdal")
+library("maptools")
+library("KernSmooth")
+library(raster)
+library(sf)
+library(tmap)
+library(dplyr)
+library(sp)
+library(spdep)
+library(leaflet.extras)
+library(mullenMisc)
+library(arules)
+
+# source('./global_regulador.R')
+
+confirmados = read.csv('../pernambuco/resultado_geolocalizacao/geo_confirmados.csv', sep = ';', encoding = 'UTF-8')
+
+confirmados$dt_notificacao <- as.Date(confirmados$dt_notificacao, format = "%d/%m/%y")
+
+# confirmados <- confirmados[,c(2, 3, 8, 13)]
+
+confirmados$lat <- as.numeric(as.character(as.factor(confirmados$lat)))
+
+confirmados$lng <- as.numeric(as.character(as.factor(confirmados$lng)))
+
+confirmados$semana <- week(confirmados$dt_notificacao)
+
+confirmados <- subset(confirmados, lat >= -9.4 & lat <= -3.83 & lng >= -40.6 & lng <= -32.3)
+
+confirmados$evolucao <- ifelse(confirmados$evolucao == 'RECUPERADO', 'RECUPERADO', ifelse(confirmados$evolucao == 'ÓBITO', 'ÓBITO', 'CONFIRMADO'))
+
+confirmados.split <- split(confirmados, confirmados$evolucao)
+
+confirmados$latJ <- jitter_latlong(confirmados$lat, type = "lat", km = 50/1000)
+confirmados$lngJ <- jitter_latlong(confirmados$lng, type = "long", lat = -35, km = 50/1000)
+
+confirmadosJ <- confirmados[,c(3,6,7)]
+colnames(confirmadosJ)[c(2,3)] <- c('lat', 'lng')
+
+confirmados_rec <- subset(confirmados, nm_municipio == 'RECIFE' & lat >= -8.16 & lat <= -7.93 & lng >= -35.1 & lng <= -34.85)
+
+confirmados_rec_bkde <- confirmados_rec[, c('lng', 'lat')]
+
+confirmados_olinda <- subset(confirmados, nm_municipio == 'OLINDA' & lat >= -8.04 & lat <= -7.96 & lng >= -34.93 & lng <= -34.83)
+
+confirmados_olinda_bkde <- confirmados_olinda[, c('lng', 'lat')]
+
+confirmados_jaboatao <- subset(confirmados, nm_municipio == 'JABOATÃO DOS GUARARAPES')
+
+confirmados_jaboatao_bkde <- confirmados_jaboatao[, c('lng', 'lat')]
+
+fontes <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 1)
+
+fontes <- fontes[, 1:4]
+fontes <- subset(fontes, Tipo == 'Dados')
+
+metadados <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 6)
+
+basevig <- read.csv2('C:/Users/hugo.vasconcelos/ownCloud2/Corona/Bases/pernambuco/resultado/base_vig.csv', sep = ';')
+
+basevig$faixa_etaria <- discretize(basevig$Idade, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, Inf), method = 'fixed', labels = c("0-9 anos", '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos', '50-59 anos', '60-69 anos', '70-79 anos', '80+ anos'))
+
+basevig <- basevig[,-c(2, 4, 15)]
+
+basevig$dt_notificacao <- as.Date(basevig$dt_notificacao, format = "%d/%m/%y")
+basevig$dt_obito <- as.Date(basevig$dt_obito, format = "%d/%m/%y")
+basevig$dt_primeiros_sintomas <- as.Date(basevig$dt_primeiros_sintomas, format = "%d/%m/%y")
+
+evolucao_geral <- read.xlsx('../pernambuco/bases/evolucao geral.xlsx', sheetIndex = 1)
+
+evolucao_geral[, 5] <- round(evolucao_geral[, 5], 3)
+evolucao_geral[, 7] <- round(evolucao_geral[, 7], 3)
+evolucao_geral[, 9] <- round(evolucao_geral[, 9], 3)
+evolucao_geral[, 11] <- round(evolucao_geral[, 11], 3)
+evolucao_geral[, 13] <- round(evolucao_geral[, 13], 3)
+evolucao_geral[, 18] <- round(evolucao_geral[, 18], 3)
+evolucao_geral[, 20] <- round(evolucao_geral[, 20], 3)
+```
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150020651-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-150020651-2');
+</script>
+
+Painel {data-icon="fa-signal"}
+===================================== 
+
+Row {data-height=600}
+-------------------------------------
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150020651-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-150020651-2');
+</script>
+
+<div id="Container"
+ style="padding-bottom:56.25%; position:relative; display:block; width: 100%">
+
+<iframe width="100%" height="80%" src="https://app.powerbi.com/view?r=eyJrIjoiY2QwMzkxMDItZjcxOS00ZGZlLThmOWEtZDNmZjlkNDU4MWQwIiwidCI6IjA5NWY4NjAxLTRhOWEtNDQ5MC1hODBkLWJmMTA4NTliODkxMCJ9" frameborder="0" allowFullScreen="TRUE" style="position:absolute; top:0; left: 0">
+</iframe>
+
+</div>
+
+### Conheca outras plataformas de dados de Pernambuco {data-height=350}
+
+<a href="https://dados.seplag.pe.gov.br/apps/pe_em_dados.html" target="_blank">Pernambuco em Dados</a>
+
+<a href="http://web.transparencia.pe.gov.br/dados-abertos/" target="_blank">Dados Abertos</a>
+
+<a href="http://web.transparencia.pe.gov.br/fiscalizacao-e-controle/covid-19/" target="_blank">Transparência covid19</a>
+
+Mapas {data-icon="fa-map"}
+===================================== 
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-150020651-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-150020651-2');
+</script>
+
+<div class = "row">
+<div class = "col-md-8">
+
+```{r}
+tags$p('Casos graves de covid-19', style = "font-size: 150%;")
+
+tags$p('Para uma maior precisão, são apresentados apenas os casos de covid-19 com sintomas de Síndrome respiratória aguda grave (SRAG)', style = "font-size: 150%;")
+
+tags$p('Para preservar as pessoas, os pontos nos mapas são  deslocados aleatoriamente num raio de até 50 metros do local real', style = "color: red; font-size: 100%;")
+
+tags$p('Os círculos não correspondem à localização exata do fato e representam a região aproximada em 50m de ocorrência do caso', style = "color: red; font-size: 120%;")
+```
+
+</div>
+
+<div class = "col-md-4" style="text-align:center;">
+
+<img src="atende_em_casa_cir.png" class="center" width="20%">
+
+```{r}
+tags$p('Está sentido algum sintoma?', style = "color: black; font-size: 100%; font-weight: bold;")
+```
+<a href="https://play.google.com/store/apps/details?id=br.brainy.atende_em_casa" target="_blank">Baixe o Atende em Casa</a>
+<a href="https://www.atendeemcasa.pe.gov.br/login" target="_blank"><br> Ou acesse o site</a>
+
+```{r}
+tags$p('#ficaemcasa', style = "color: black; font-size: 120%; font-weight: bold;")
+```
+
+</div>
+</div>
+
+Row {.tabset .tabset-fade data-height=500}
+-------------------------------------
+
+### Conglomerados
+
+```{r}
+
+l <- leaflet() %>% addTiles(options = providerTileOptions( updateWhenZooming = FALSE,  updateWhenIdle = TRUE))
+
+names(confirmados.split) %>%
+  purrr::walk( function(df) {
+    l <<- l %>%
+      addCircleMarkers(data=confirmados.split[[df]], , lng=~lng, lat=~lat, group = df, radius = 50, clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F), labelOptions = labelOptions(noHide = F, direction = 'auto')) 
+  })
+
+l %>% addLayersControl(overlayGroups = names(confirmados.split), options = layersControlOptions(collapsed = FALSE)) %>% addLegend(position = "bottomright", colors = 'white',  opacity = 0.5, labels = '', title = '#ficaemcasa')
+
+# leaflet(confirmados, height="100%", width="100%") %>% addTiles(options = providerTileOptions(
+#   updateWhenZooming = FALSE,  updateWhenIdle = TRUE)) %>% addCircleMarkers(radius = 50,
+#   clusterOptions = markerClusterOptions()) %>% addLegend(position = "bottomright", colors = 'white',  opacity = 0.5, labels = '', title = '#ficaemcasa') %>%
+#   addLayersControl(
+#     overlayGroups = names(confirmados.split),
+#     options = layersControlOptions(collapsed = FALSE)
+#   )
+```
+
+<!-- ### Conglomerados -->
+
+<!-- ```{r} -->
+<!-- leaflet(confirmadosJ, height="100%", width="100%") %>% addTiles(options = tileOptions(maxZoom = 15)) %>% addMarkers( -->
+<!--   clusterOptions = markerClusterOptions()) %>% addLegend(position = "bottomright", colors = 'white', -->
+<!--   opacity = 0.5, labels = '', title = '#ficaemcasa') -->
+<!-- ``` -->
+
+### Bairros - Recife
+
+```{r}
+shp_name <- "RM_Recife/Shapes_RM Recife/bairros-polygon.shp"
+recife_lsoa <- st_read(shp_name, quiet = TRUE)
+
+confirmados_spatial = st_as_sf(confirmados_rec, coords = c("lng", "lat"), crs = 4326, agr = "constant")
+
+confirmados_mc <- st_intersects(recife_lsoa, confirmados_spatial)
+
+confirmados_mc <- confirmados_spatial[unlist(confirmados_mc),]
+
+confirmados_por_bairro <- confirmados_mc %>% 
+  st_join(recife_lsoa, ., left = FALSE) %>% 
+  count(bairro_nom)
+
+confirmados_por_bairro_dt <- confirmados_mc %>% 
+  st_join(recife_lsoa, ., left = FALSE) %>% 
+  count(bairro_nom, semana)
+
+confirmados_por_bairro <- rename(confirmados_por_bairro, Confirmados = n)
+
+confirmados_por_bairro_dt <- rename(confirmados_por_bairro_dt, Confirmados = n)
+
+tmap_mode("view")
+tm_shape(confirmados_por_bairro) + tm_fill("Confirmados", style = "quantile", palette = "YlOrRd") +  tm_borders(alpha = 0.1) +  tm_layout(main.title = "Confirmados Covid-19", main.title.size = 0.7 , legend.position = c("left", "bottom"), legend.title.size = 0.8) 
+```
+
+### Bairros - Recife - Evolução
+
+```{r}
+tmap_mode("plot")
+tm_shape(confirmados_por_bairro_dt) + 
+  tm_fill("Confirmados") +
+  tm_borders() +
+  tm_facets("semana",  free.coords=FALSE)
+```
+
+### Mapa de Calor - Recife
+
+```{r}
+require(raster)
+kde <- bkde2D(confirmados_rec_bkde,bandwidth=c(.0045, .0068), gridsize = c(1000,1000))
+KernelDensityRaster <- raster(list(x=kde$x1 ,y=kde$x2 ,z = kde$fhat))
+
+KernelDensityRaster@data@values[which(KernelDensityRaster@data@values < 1)] <- NA
+
+palRaster <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster@data@values, na.color = "transparent")
+
+leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster, colors = palRaster, opacity = .8) %>% addLegend(pal = palRaster, values = KernelDensityRaster@data@values, title = "Mapa de Calor - Kernel")
+```
+
+### Mapa de Calor - Olinda
+
+```{r}
+kde_olinda <- bkde2D(confirmados_olinda_bkde,bandwidth=c(.0045, .0068), gridsize = c(1000,1000))
+KernelDensityRaster_olinda <- raster(list(x=kde_olinda$x1 ,y=kde_olinda$x2, z = kde_olinda$fhat))
+
+KernelDensityRaster_olinda@data@values[which(KernelDensityRaster_olinda@data@values < 1)] <- NA
+
+palRaster_olinda <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster_olinda@data@values, na.color = "transparent")
+
+leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster_olinda, colors = palRaster_olinda, opacity = .8) %>% addLegend(pal = palRaster_olinda, values = KernelDensityRaster_olinda@data@values, title = "Mapa de Calor - Kernel")
+```
+
+<!-- ### Mapa de Calor - Jaboatão -->
+
+<!-- ```{r} -->
+<!-- kde_jaboatao <- bkde2D(confirmados_jaboatao_bkde,bandwidth=c(.0045, .0068), gridsize = c(1000,1000)) -->
+<!-- KernelDensityRaster_jaboatao <- raster(list(x=kde_jaboatao$x1 ,y=kde_jaboatao$x2, z = kde_jaboatao$fhat)) -->
+
+<!-- KernelDensityRaster_jaboatao@data@values[which(KernelDensityRaster_jaboatao@data@values < 1)] <- NA -->
+
+<!-- palRaster_jaboatao <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster_jaboatao@data@values, na.color = "transparent") -->
+
+<!-- leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster_jaboatao, colors = palRaster_jaboatao, opacity = .8) %>% addLegend(pal = palRaster_jaboatao, values = KernelDensityRaster_jaboatao@data@values, title = "Mapa de Calor - Kernel") -->
+<!-- ``` -->

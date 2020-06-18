@@ -1,0 +1,119 @@
+---
+title: "Informações Gerais Pernambuco"
+output:
+   flexdashboard::flex_dashboard:
+    orientation: rows
+    css: corp-styles.css
+    vertical_layout: scroll
+    includes:
+       in_header: header.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(emojifont)
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library(jtools)
+library(wesanderson)
+library(zoo)
+library(jtools)
+library(plotly)
+library(papeR)
+library(gplots)
+library(formattable)
+library(ggthemes)
+library(sjPlot)
+library(readxl)
+library(kableExtra)
+library(xlsx)
+library(reshape2)
+library(htmltools)
+library(htmlwidgets)
+library(xml2)
+library(dplyr)
+library(rvest)
+library(lubridate)
+library(tidyr)
+library(incidence)
+library(flexdashboard)
+
+evolucao_geral <- read.xlsx('../pernambuco/bases/evolucao geral.xlsx', 1)
+
+evolucao_geral$dt_referencia <- as.Date(evolucao_geral$dt_referencia, format = "%d/%m/%y")
+
+evolucao_geral <- evolucao_geral %>% filter(dt_referencia == max(dt_referencia))
+
+confirmados <- evolucao_geral$confirmados
+notificados <- '-'
+descartados <- '-'
+investigados <- '-'
+inconclusivo <- '-'
+recuperados <- evolucao_geral$recuperados
+obitos <- evolucao_geral$obitos
+```
+
+Row {data-height=200} 
+-------------------------------------
+
+### Notificados 
+
+```{r, echo = FALSE}
+valueBox(notificados, color = 'rgb(6, 0, 255)')
+```
+
+### Confirmados 
+
+```{r, echo = FALSE}
+valueBox(confirmados, color = 'rgb(255, 0, 0)')
+```
+
+### Descartados 
+
+```{r, echo = FALSE}
+valueBox(descartados, color = 'rgb(128, 128, 128)')
+```
+
+### Em Investigação 
+
+```{r, echo = FALSE}
+valueBox(investigados, color = 'rgb(128, 0, 128)')
+```
+
+### Inconclusivos 
+
+```{r, echo = FALSE}
+valueBox(inconclusivo, color = 'rgb(255, 165, 0)')
+```
+
+### Recuperados 
+
+```{r, echo = FALSE}
+valueBox(recuperados, color = 'rgb(0, 128, 0)')
+```
+
+### Óbitos 
+
+```{r, echo = FALSE}
+valueBox(obitos, color = 'rgb(0, 0, 0)')
+```
+
+Row {data-height=100} 
+-------------------------------------
+
+### Última atualização 
+
+```{r, echo = FALSE}
+valueBox(Sys.Date(), color = 'rgb(192,192,192)')
+```
+
+Row {data-height=100} {.no-mobile}
+-------------------------------------
+
+### Clique aqui 
+
+```{r, echo = FALSE}
+valueBox('Consulte dados sobre o novo Corona Vírus no Mundo', href = 'http://dados.seplag.pe.gov.br/apps/corona.html', color = 'rgb(0,0,139)')
+```
