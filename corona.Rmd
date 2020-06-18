@@ -65,7 +65,7 @@ library(leaflet.extras)
 library(mullenMisc)
 library(arules)
 
-# source('./global_regulador.R')
+source('./global_regulador.R')
 
 confirmados = read.csv('../pernambuco/resultado_geolocalizacao/geo_confirmados.csv', sep = ';', encoding = 'UTF-8')
 
@@ -114,7 +114,7 @@ basevig <- read.csv2('C:/Users/hugo.vasconcelos/ownCloud2/Corona/Bases/pernambuc
 
 basevig$faixa_etaria <- discretize(basevig$Idade, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, Inf), method = 'fixed', labels = c("0-9 anos", '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos', '50-59 anos', '60-69 anos', '70-79 anos', '80+ anos'))
 
-basevig <- basevig[,-c(2, 4, 15)]
+basevig <- basevig[,-c(2,4)]
 
 basevig$dt_notificacao <- as.Date(basevig$dt_notificacao, format = "%d/%m/%y")
 basevig$dt_obito <- as.Date(basevig$dt_obito, format = "%d/%m/%y")
@@ -317,15 +317,344 @@ palRaster_olinda <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster_ol
 leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster_olinda, colors = palRaster_olinda, opacity = .8) %>% addLegend(pal = palRaster_olinda, values = KernelDensityRaster_olinda@data@values, title = "Mapa de Calor - Kernel")
 ```
 
-<!-- ### Mapa de Calor - Jaboatão -->
+### Mapa de Calor - Jaboatão
 
-<!-- ```{r} -->
-<!-- kde_jaboatao <- bkde2D(confirmados_jaboatao_bkde,bandwidth=c(.0045, .0068), gridsize = c(1000,1000)) -->
-<!-- KernelDensityRaster_jaboatao <- raster(list(x=kde_jaboatao$x1 ,y=kde_jaboatao$x2, z = kde_jaboatao$fhat)) -->
+```{r}
+kde_jaboatao <- bkde2D(confirmados_jaboatao_bkde,bandwidth=c(.0045, .0068), gridsize = c(1000,1000))
+KernelDensityRaster_jaboatao <- raster(list(x=kde_jaboatao$x1 ,y=kde_jaboatao$x2, z = kde_jaboatao$fhat))
 
-<!-- KernelDensityRaster_jaboatao@data@values[which(KernelDensityRaster_jaboatao@data@values < 1)] <- NA -->
+KernelDensityRaster_jaboatao@data@values[which(KernelDensityRaster_jaboatao@data@values < 1)] <- NA
 
-<!-- palRaster_jaboatao <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster_jaboatao@data@values, na.color = "transparent") -->
+palRaster_jaboatao <- colorBin("YlOrRd", bins = 7, domain = KernelDensityRaster_jaboatao@data@values, na.color = "transparent")
 
-<!-- leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster_jaboatao, colors = palRaster_jaboatao, opacity = .8) %>% addLegend(pal = palRaster_jaboatao, values = KernelDensityRaster_jaboatao@data@values, title = "Mapa de Calor - Kernel") -->
-<!-- ``` -->
+leaflet() %>% addTiles() %>% addRasterImage(KernelDensityRaster_jaboatao, colors = palRaster_jaboatao, opacity = .8) %>% addLegend(pal = palRaster_jaboatao, values = KernelDensityRaster_jaboatao@data@values, title = "Mapa de Calor - Kernel")
+```
+
+Regulação SRAG {data-icon="fa-file-medical"}
+===================================== 
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox('Leitos Totais em Pernambuco')`
+
+```{r}
+
+leitos <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'INATIVO') %>% summarize(total = sum(leito_oper))
+
+valueBox(leitos)
+```
+
+### `r valueBox('UTI em Pernambuco')`
+
+```{r}
+
+leitos <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'INATIVO' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper))
+
+valueBox(leitos)
+```
+
+### `r valueBox('Enfermaria em Pernambuco')`
+
+```{r}
+
+leitos <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'INATIVO' & tipo_leito2 == 'ENFERMARIA') %>% summarize(total = sum(leito_oper))
+
+valueBox(leitos)
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox('Ocupacao Total em Pernambuco')`
+
+```{r}
+
+abs_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE') %>% summarize(total = sum(leito_oper))
+
+abs_leitosLivres <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial == 'LIVRE') %>% summarize(total = sum(leito_oper))
+
+rel_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE') %>% summarize(total = sum(leito_oper)) / leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'BLOQUEADO' & status_inicial != 'INATIVO') %>% summarize(total = sum(leito_oper)) 
+
+  valueBox(
+  paste(paste(abs_leitosOcup, 'Oc'), ' | ', paste(abs_leitosLivres, 'Lv'),  ' | ', percent(rel_leitosOcup,0)), color = ifelse(rel_leitosOcup > 0.95, "danger", ifelse(rel_leitosOcup > 0.85, 'warning', "success")))
+
+```
+
+### `r valueBox('Ocupacao UTI em Pernambuco')`
+
+```{r}
+
+abs_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper))
+
+abs_leitosLivres <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial == 'LIVRE' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper))
+
+rel_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper)) / leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'BLOQUEADO' & status_inicial != 'INATIVO' & tipo_leito2 == 'UTI') %>% summarize(total = sum(leito_oper)) 
+
+valueBox(
+  paste(paste(abs_leitosOcup, 'Oc'), ' | ', paste(abs_leitosLivres, 'Lv'),  ' | ', percent(rel_leitosOcup,0)), color = ifelse(rel_leitosOcup > 0.95, "danger", ifelse(rel_leitosOcup > 0.85, 'warning', "success")))  
+
+```
+
+### `r valueBox('Ocupacao Enfermaria em Pernambuco')`
+
+```{r}
+abs_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE' & tipo_leito2 != 'UTI') %>% summarize(total = sum(leito_oper))
+
+abs_leitosLivres <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial == 'LIVRE' & tipo_leito2 != 'UTI') %>% summarize(total = sum(leito_oper))
+
+rel_leitosOcup <- leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'LIVRE' & tipo_leito2 != 'UTI') %>% summarize(total = sum(leito_oper)) / leito %>% filter(data_ocup == max_dt_leito-1 & status_inicial != 'BLOQUEADO' & status_inicial != 'INATIVO' & tipo_leito2 != 'UTI') %>% summarize(total = sum(leito_oper)) 
+
+valueBox(
+  paste(paste(abs_leitosOcup, 'Oc'), ' | ', paste(abs_leitosLivres, 'Lv'),  ' | ', percent(rel_leitosOcup,0)), color = ifelse(rel_leitosOcup > 0.95, "danger", ifelse(rel_leitosOcup > 0.85, 'warning', "success")))
+
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox(paste('Internações em', max_dt_leito-1))`
+
+```{r}
+
+  int_hoje <- int_pac %>% filter(data_int == max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+
+  valueBox(int_hoje)
+
+```
+
+### `r valueBox(paste('Total de Internações até', max_dt_leito-1))`
+
+```{r}
+
+  int_hoje <- int_pac %>% filter(data_int <= max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+
+  valueBox(int_hoje)
+
+```
+
+### `r valueBox(paste('Altas em', max_dt_leito-1))`
+
+```{r}
+
+altas_hoje <- int_pac %>% filter(data_alta == max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+
+valueBox(altas_hoje)
+
+```
+
+### `r valueBox(paste('Total de Altas até', max_dt_leito-1))`
+
+```{r}
+
+altas_hoje <- int_pac %>% filter(data_alta <= max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+
+valueBox(altas_hoje)
+
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox('Solicitacoes Ativas UTI')`
+
+```{r painel solicitacoes ativas uti}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas UTI Adulto')`
+
+```{r painel solicitacoes ativas uti adulto}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & (esp_leito_reg == 'SRAG' | esp_leito_reg == 'SRAG-CARDIOLOGICO' | esp_leito_reg == 'SRAG COVID NEGATIVO') & tipo_leito_reg != 'UTI INFANTIL') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas UTI Infantil')`
+
+```{r painel solicitacoes ativas uti pediatrica}
+
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & esp_leito_reg == 'SRAG' & tipo_leito_reg == 'UTI INFANTIL') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas UTI Neonatal')`
+
+```{r painel solicitacoes ativas uti neo}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & esp_leito_reg == 'SRAG-NEONATOLOGIA' & tipo_leito_reg == 'UTI NEONATAL') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas UTI Obstetrica')`
+
+```{r painel solicitacoes ativas uti obstetrica}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & esp_leito_reg == 'SRAG-OBSTETRICO') %>% summarize(total = sum(lista))
+           )
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### `r valueBox('Solicitacoes Ativas Enfermaria')`
+
+```{r painel solicitacoes ativas enf}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg != 'UTI') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas Enfermaria Adulto')`
+
+```{r painel solicitacoes ativas enf adulto}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg != 'UTI' & tipo_leito_reg != 'PEDIATRICO' & esp_leito_reg != 'SRAG-OBSTETRICO') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas Enfermaria Infantil')`
+
+```{r painel solicitacoes ativas enf pediatrica}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg != 'UTI' & tipo_leito_reg == 'PEDIATRICO') %>% summarize(total = sum(lista))
+           )
+```
+
+### `r valueBox('Solicitacoes Ativas Enfermaria Obstetrica')`
+
+```{r painel solicitacoes ativas enf obstetrica}
+  valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg != 'UTI' & esp_leito_reg == 'SRAG-OBSTETRICO') %>% summarize(total = sum(lista))
+           )
+```
+
+Row {.tabset .tabset-fade}
+-------------------------------------
+
+### Solicitações Ativas
+
+```{r}
+x <- sol_hist_nova %>% filter(tipo2_leito_reg=='UTI' & dt_base_sol <= max_dt_leito-1) %>% group_by(data = dt_base_sol) %>%  summarize(UTI = sum(lista))
+y <- sol_hist_nova %>% filter(tipo2_leito_reg=='ENFERMARIA' & dt_base_sol <= max_dt_leito-1) %>% group_by(data = dt_base_sol) %>%  summarize(ENFERMARIA = sum(lista))
+z <- merge(x, y, by='data', all = T)
+z <- z %>% replace(is.na(.), 0)
+  
+plotly::plot_ly(data = z) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~UTI+ENFERMARIA,
+    type = 'bar',
+    textposition = 'outside',
+    name = "Total",
+    line = list(color = "orange"),
+    marker = list(color = "orange")
+  ) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~UTI,
+    type = 'scatter', mode = 'lines',
+    textposition = 'outside',
+    name = "UTI",
+    line = list(color = "red"),
+    marker = list(color = "red")
+  ) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~ENFERMARIA,
+    type = 'scatter', mode = 'lines',
+    textposition = 'outside',
+    name = "ENFERMARIA",
+    line = list(color = "blue"),
+    marker = list(color = "blue")
+  ) %>%
+  plotly::layout(
+    yaxis = list(title = "Solicitacoes em fila por dia"),
+    xaxis = list(title = "Data"),
+    hovermode = "compare"
+  )
+```
+
+### Ocupação - UTI
+
+```{r}
+
+z1 <- leito %>% group_by(data = data_ocup) %>% filter(status_inicial != 'LIVRE' & tipo_leito2 == 'UTI' & data_ocup >= '2020-03-20' & data_ocup <= max_dt_leito-1) %>% summarize(leitos1 = sum(leito_oper))
+z2 <- leito %>% group_by(data = data_ocup) %>% filter(tipo_leito2 == 'UTI' & data_ocup >= '2020-03-20') %>% summarize(leitos2 = sum(leito_oper))
+
+baseTaxas <- merge(z1, z2, all = TRUE)
+baseTaxas$ocupacao <- percent(baseTaxas$leitos1 / baseTaxas$leitos2, 2)
+baseTaxas <- baseTaxas[, c(1,4)]
+
+  plotly::plot_ly(data = baseTaxas) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~ocupacao,
+    type = 'scatter', mode = 'lines',
+    text = ~paste(as.integer(ocupacao*100),'%'),
+    textposition = 'outside',
+    name = "Taxa de Ocupacao",
+    line = list(color = "blue"),
+    marker = list(color = "blue")
+  ) %>%
+  plotly::layout(
+    title = "Taxa de Ocupacao em UTI",
+    yaxis = list(title = "Taxa de Ocupacao"),
+    xaxis = list(title = "Data"),
+    legend = list(x = 0.1, y = 0.9),
+    hovermode = "compare"
+  )
+```
+
+### Leitos Totais
+
+```{r}
+leitos <- leito %>% group_by(data = data_ocup, tipo = tipo_leito2) %>% filter(data_ocup <= max_dt_leito-1, status_inicial != 'INATIVO') %>% summarize(total = sum(leito_oper))
+
+leitos <- leitos %>% tidyr::pivot_wider(names_from = c(tipo), values_from = total)
+
+  plotly::plot_ly(data = leitos) %>%
+  plotly::add_trace(
+    x = ~data,
+    y = ~ENFERMARIA,
+    type = 'bar', 
+    textposition = 'outside',
+    name = "Enfermaria",
+    line = list(color = "blue"),
+    marker = list(color = "blue")
+  ) %>%
+    add_trace(
+    x = ~data,
+    y = ~UTI,
+    type = 'bar', mode = 'lines',
+    textposition = 'outside',
+    name = "UTI",
+    line = list(color = "red"),
+    marker = list(color = "red")
+  ) %>%
+    add_trace(
+    x = ~data,
+    y = ~ENFERMARIA+UTI,
+    type = 'bar', mode = 'lines',
+    textposition = 'outside',
+    name = "Total",
+    line = list(color = "orange"),
+    marker = list(color = "orange")
+  ) %>%
+  plotly::layout(
+    title = "Taxa de Ocupacao em UTI",
+    yaxis = list(title = "Taxa de Ocupacao"),
+    xaxis = list(title = "Data"),
+    legend = list(x = 0.1, y = 0.9),
+    hovermode = "compare"
+  ) %>%
+  rangeslider()
+```
+
+Row {data-height=30}
+-------------------------------------
+
+```{r carga1}
+valueBox(value =  tags$p(paste('Este painel apresenta os dados de leitos de Síndrome Respiratória Aguda Grave (SRAG), no Estado de Pernambuco'), style = "font-size: 100%;"))   
+```
+
+Row {data-height=30}
+-------------------------------------
+
+```{r carga2}
+valueBox(value =  tags$p(paste('Os dados disponíveis seguem como data-base o dia anterior:', 'Data base', max_dt_leito-1), style = "font-size: 100%;"))   
+```
