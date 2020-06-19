@@ -463,14 +463,14 @@ Row {data-height=100}
            )
 ```
 
-### `r valueBox('Solicitacoes Ativas UTI Adulto')`
+### `r valueBox('Solic. At. UTI Adulto')`
 
 ```{r painel solicitacoes ativas uti adulto}
   valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & (esp_leito_reg == 'SRAG' | esp_leito_reg == 'SRAG-CARDIOLOGICO' | esp_leito_reg == 'SRAG COVID NEGATIVO') & tipo_leito_reg != 'UTI INFANTIL') %>% summarize(total = sum(lista))
            )
 ```
 
-### `r valueBox('Solicitacoes Ativas UTI Infantil')`
+### `r valueBox('Solic. At. UTI Infantil')`
 
 ```{r painel solicitacoes ativas uti pediatrica}
 
@@ -478,14 +478,14 @@ Row {data-height=100}
            )
 ```
 
-### `r valueBox('Solicitacoes Ativas UTI Neonatal')`
+### `r valueBox('Solic. At. UTI Neonatal')`
 
 ```{r painel solicitacoes ativas uti neo}
   valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & esp_leito_reg == 'SRAG-NEONATOLOGIA' & tipo_leito_reg == 'UTI NEONATAL') %>% summarize(total = sum(lista))
            )
 ```
 
-### `r valueBox('Solicitacoes Ativas UTI Obstetrica')`
+### `r valueBox('Solic. At. UTI Obstetrica')`
 
 ```{r painel solicitacoes ativas uti obstetrica}
   valueBox(sol_hist_nova %>% filter(dt_base_sol == max_dt_leito-1 & tipo2_leito_reg == 'UTI' & esp_leito_reg == 'SRAG-OBSTETRICO') %>% summarize(total = sum(lista))
