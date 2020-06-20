@@ -410,48 +410,48 @@ valueBox(
 
 ```
 
-Row {data-height=100}
--------------------------------------
+<!-- Row {data-height=100} -->
+<!-- ------------------------------------- -->
 
-### `r valueBox(paste('Internações em', max_dt_leito-1))`
+<!-- ### `r valueBox(paste('Internações em', max_dt_leito-1))` -->
 
-```{r}
+<!-- ```{r} -->
 
-  int_hoje <- int_pac %>% filter(data_int == max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+<!--   int_hoje <- int_pac %>% filter(data_int == max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int)) -->
 
-  valueBox(int_hoje)
+<!--   valueBox(int_hoje) -->
 
-```
+<!-- ``` -->
 
-### `r valueBox(paste('Total de Internações até', max_dt_leito-1))`
+<!-- ### `r valueBox(paste('Total de Internações até', max_dt_leito-1))` -->
 
-```{r}
+<!-- ```{r} -->
 
-  int_hoje <- int_pac %>% filter(data_int <= max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+<!--   int_hoje <- int_pac %>% filter(data_int <= max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int)) -->
 
-  valueBox(int_hoje)
+<!--   valueBox(int_hoje) -->
 
-```
+<!-- ``` -->
 
-### `r valueBox(paste('Altas em', max_dt_leito-1))`
+<!-- ### `r valueBox(paste('Altas em', max_dt_leito-1))` -->
 
-```{r}
+<!-- ```{r} -->
 
-altas_hoje <- int_pac %>% filter(data_alta == max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+<!-- altas_hoje <- int_pac %>% filter(data_alta == max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int)) -->
 
-valueBox(altas_hoje)
+<!-- valueBox(altas_hoje) -->
 
-```
+<!-- ``` -->
 
-### `r valueBox(paste('Total de Altas até', max_dt_leito-1))`
+<!-- ### `r valueBox(paste('Total de Altas até', max_dt_leito-1))` -->
 
-```{r}
+<!-- ```{r} -->
 
-altas_hoje <- int_pac %>% filter(data_alta <= max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int))
+<!-- altas_hoje <- int_pac %>% filter(data_alta <= max_dt_leito-1 & status_sol != 'CANCELADO') %>% summarize(total = sum(int)) -->
 
-valueBox(altas_hoje)
+<!-- valueBox(altas_hoje) -->
 
-```
+<!-- ``` -->
 
 Row {data-height=100}
 -------------------------------------
