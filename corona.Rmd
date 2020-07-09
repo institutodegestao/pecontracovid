@@ -66,6 +66,7 @@ library(mullenMisc)
 library(arules)
 
 source('./global_regulador.R')
+source('./global_prisional.R')
 
 confirmados = read.csv('../pernambuco/resultado_geolocalizacao/geo_confirmados.csv', sep = ';', encoding = 'UTF-8')
 
@@ -141,7 +142,7 @@ evolucao_geral[, 20] <- round(evolucao_geral[, 20], 3)
   gtag('config', 'UA-150020651-2');
 </script>
 
-Painel {data-icon="fa-signal"}
+Geral {data-icon="fa-signal"}
 ===================================== 
 
 Row {data-height=600}
@@ -657,4 +658,125 @@ Row {data-height=30}
 
 ```{r carga2}
 valueBox(value =  tags$p(paste('Os dados disponíveis seguem como data-base o dia anterior:', 'Data base', max_dt_leito-1), style = "font-size: 100%;"))   
+```
+
+Prisional {data-icon="fa-user"}
+===================================== 
+
+Row {data-height=100}
+-------------------------------------
+
+### Total de Casos Suspeitos 
+
+```{r}
+valueBox(covid_prisional_susp %>% filter(data_id <= max_dt_id) %>% summarize(total = sum(pris_susp)))
+```
+
+### Suspeitos em Isolamento
+
+```{r}
+
+valueBox(covid_prisional_susp %>% filter(situacao == 'ISOLAMENTO NA UP' & data_id <= max_dt_id) %>% summarize(total = sum(pris_susp)))
+
+```
+
+### Suspeitos em Convívio no Pavilhão
+
+```{r}
+  valueBox(covid_prisional_susp %>% filter(situacao == 'CONVIVIO NO PAVILHAO' & data_id <= max_dt_id) %>% summarize(total = sum(pris_susp)))
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### Total de Casos Confirmados 
+
+```{r}
+  valueBox(covid_prisional_conf %>% filter(data_id <= max_dt_id) %>% summarize(total = sum(pris_conf)))
+```
+
+### Confirmados  - Óbitos
+
+```{r}
+  valueBox(covid_prisional_conf %>% filter(situacao == 'OBITO' & data_id <= max_dt_id) %>% summarize(total = sum(pris_conf)))
+```
+
+### Confirmados - Recuperados
+
+```{r}
+  valueBox(covid_prisional_conf %>% filter(situacao == 'RECUPERADO' & data_id <= max_dt_id) %>% summarize(total = sum(pris_conf)))
+```
+
+Row {.tabset .tabset-fade}
+-------------------------------------
+
+### Suspeitos - Situação
+
+```{r}
+
+plot_ly(count(covid_prisional_susp, situacao), labels = ~situacao, values = ~n, type = 'pie', textposition = 'inside') %>% layout(
+    title = "Situação dos Casos Suspeitos de COVID-19"
+  )
+
+```
+
+### Suspeitos - Comorbidades
+
+```{r}
+
+plot_ly(count(covid_prisional_susp, comorbidade), labels = ~comorbidade, values = ~n, type = 'pie', textposition = 'inside') %>% layout(
+    title = "Situação dos Casos Suspeitos de COVID-19"
+  )
+
+```
+
+### Confirmados - Série
+
+```{r}
+
+  conf_tempo <- covid_prisional_conf %>% group_by(data_confirmacao) %>% summarize(total = sum(pris_conf))
+
+  plot_ly(data = conf_tempo) %>%
+  add_trace(
+    x = ~data_confirmacao,
+    y = ~total,
+    type = 'scatter', mode = 'lines+markers',
+    text = ~total,
+    textposition = 'outside',
+    name = "Confirmados",
+    line = list(color = "red"),
+    marker = list(color = "red")
+  ) %>%
+  layout(
+    yaxis = list(title = "Casos Confirmados"),
+    xaxis = list(title = "Data"),
+    legend = list(x = 0.1, y = 0.9)
+  )
+
+```
+
+### Saídas por SRAG
+
+```{r}
+
+  saidas_tempo <- monit_srag 
+
+  plot_ly(data = saidas_tempo) %>%
+  add_trace(
+    x = ~data_saida,
+    y = ~total,
+    type = 'scatter', mode = 'lines+markers',
+    text = ~total,
+    textposition = 'outside',
+    name = "Suspeitos",
+    line = list(color = "red"),
+    marker = list(color = "red")
+  ) %>%
+  layout(
+    title = "Saidas por SRAG",
+    yaxis = list(title = "Saidas"),
+    xaxis = list(title = "Data"),
+    legend = list(x = 0.1, y = 0.9)
+  )
+
 ```
