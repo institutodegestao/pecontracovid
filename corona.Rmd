@@ -114,7 +114,7 @@ basevig <- read.csv2('C:/Users/hugo.vasconcelos/ownCloud2/Corona/Bases/pernambuc
 
 basevig$faixa_etaria <- discretize(basevig$Idade, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, Inf), method = 'fixed', labels = c("0-9 anos", '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos', '50-59 anos', '60-69 anos', '70-79 anos', '80+ anos'))
 
-basevig <- basevig[,-c(2,4)]
+basevig <- basevig[,-c(1,3)]
 
 basevig$dt_notificacao <- as.Date(basevig$dt_notificacao, format = "%d/%m/%y")
 basevig$dt_obito <- as.Date(basevig$dt_obito, format = "%d/%m/%y")
