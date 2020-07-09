@@ -5,7 +5,7 @@ output:
     orientation: rows
     vertical_layout: scroll
     navbar:
-      - { title: "Dados", href: "http://dados.seplag.pe.gov.br/apps/corona_dados.html", align: left }
+      - { title: "Dados", href: "http://dados.seplag.pe.gov.br/apps/corona_dados.html", align: right }
     includes:
        in_header: header.html
 ---
@@ -67,6 +67,7 @@ library(arules)
 
 source('./global_regulador.R')
 source('./global_prisional.R')
+source('./global_testes_covid19.R')
 
 confirmados = read.csv('../pernambuco/resultado_geolocalizacao/geo_confirmados.csv', sep = ';', encoding = 'UTF-8')
 
@@ -778,5 +779,125 @@ plot_ly(count(covid_prisional_susp, comorbidade), labels = ~comorbidade, values 
     xaxis = list(title = "Data"),
     legend = list(x = 0.1, y = 0.9)
   )
+
+```
+
+Testes {data-icon="fa-vial"}
+=====================================
+
+Row {data-height=100}
+-------------------------------------
+
+### Testes Disponíveis - RT-PCR
+
+```{r}
+ valueBox(testes_dsp <- base_testes_dsp %>% filter(dt_referencia==max_dt_dsp) %>%  summarise(cont = sum(rt_pcr_dsp)))
+```
+
+### Testes Disponíveis - RÁPIDO
+
+```{r}
+ valueBox(testes_dsp <- base_testes_dsp %>% filter(dt_referencia==max_dt_dsp) %>%  summarise(cont = sum(rapido_dsp)))
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### RT-PCR Aplicados - Lab Públicos
+
+```{r}
+ valueBox(num_testes_pub <- base_testes %>% filter(tipo_lab=='Público') %>%  summarise(cont = sum(testes)))
+```
+
+### RT-PCR Aplicados - Lab Privados
+
+```{r}
+ valueBox(num_testes_priv <- base_testes %>% filter(tipo_lab=='Privado') %>%  summarise(cont = sum(testes)))
+```
+
+### Testes Rápidos Aplicados
+
+```{r}
+ valueBox(num_testes_priv <- base_testes %>% filter(tipo_lab=='Teste Rápido') %>%  summarise(cont = sum(testes)))
+```
+
+### Testes de Sorologia Aplicados
+
+```{r}
+ valueBox(num_testes_priv <- base_testes %>% filter(tipo_teste=='Sorologia') %>%  summarise(cont = sum(testes)))
+```
+
+Row {.tabset .tabset-fade data-height=500}
+-------------------------------------
+### TOTAL DE TESTES
+
+```{r}
+
+  testes_por_data <- grafico_testes %>% group_by(dt_ref) %>% summarize(total = sum(TOTAL), pri = sum(privado), pub = sum(publico), rap = sum(teste_rapido))
+  
+# GRÁFICO DE BARRAS  
+  x  <- testes_por_data$dt_ref
+  y  <- testes_por_data$total
+  y2 <- testes_por_data$pub
+  y3 <- testes_por_data$pri
+  y4 <- testes_por_data$rap
+  data <- data.frame(x, y)
+  evol_solicitacao <- plot_ly(data, x = ~x, y = ~y, type = 'bar', name = 'TOTAL',     domain = list(x=c(0.6, 1), y=c(0,1)), marker = list(color = "orange"))
+  evol_solicitacao <- evol_solicitacao %>% add_trace (y = ~y2, type = 'scatter', mode = 'lines',
+       name = "PUBLICO",
+       line = list(color = "blue"),
+       marker = list(color = "blue"))
+  evol_solicitacao <- evol_solicitacao %>% add_trace (y = ~y3, type = 'scatter', mode = 'lines',
+       name = "PRIVADO",
+       line = list(color = "darkgreen"),
+       marker = list(color = "darkgreen"))
+  evol_solicitacao <- evol_solicitacao %>% add_trace (y = ~y4, type = 'scatter', mode = 'lines',
+       name = "TESTE RÁPIDO",
+       line = list(color = "black"),
+       marker = list(color = "black"))
+  evol_solicitacao <- evol_solicitacao %>% layout(
+  xaxis = list(title = "Data"),
+  yaxis = list(title = "Testes"),
+  margin = list(b = 200),
+  barmode = 'group')
+
+  evol_solicitacao
+
+
+```
+
+### TOTAL DE TESTES POR TIPO
+
+```{r}
+
+  testes_por_tipo <- grafico_testes_tipo %>% group_by(dt_ref) %>% summarize(total = sum(TOTAL), pcr = sum(rt_pcr), rapido = sum(rapido), sor = sum(sorologia))
+  
+# GRÁFICO DE BARRAS  
+  x  <- testes_por_tipo$dt_ref
+  y  <- testes_por_tipo$total
+  y2 <- testes_por_tipo$pcr
+  y3 <- testes_por_tipo$rapido
+  y4 <- testes_por_tipo$sor
+  data <- data.frame(x, y)
+  evol_solicitacao <- plot_ly(data, x = ~x, y = ~y, type = 'bar', name = 'TOTAL',     domain = list(x=c(0.6, 1), y=c(0,1)), marker = list(color = "orange"))
+  evol_solicitacao <- evol_solicitacao %>% add_trace (y = ~y2, type = 'scatter', mode = 'lines',
+       name = "RT-PCR",
+       line = list(color = "blue"),
+       marker = list(color = "blue"))
+  evol_solicitacao <- evol_solicitacao %>% add_trace (y = ~y3, type = 'scatter', mode = 'lines',
+       name = "RAPIDO",
+       line = list(color = "darkgreen"),
+       marker = list(color = "darkgreen"))
+  evol_solicitacao <- evol_solicitacao %>% add_trace (y = ~y4, type = 'scatter', mode = 'lines',
+       name = "SOROLOGIA",
+       line = list(color = "black"),
+       marker = list(color = "black"))
+  evol_solicitacao <- evol_solicitacao %>% layout(
+  xaxis = list(title = "Data"),
+  yaxis = list(title = "Testes"),
+  margin = list(b = 200),
+  barmode = 'group')
+
+  evol_solicitacao
 
 ```
