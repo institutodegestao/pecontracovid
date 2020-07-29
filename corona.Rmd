@@ -1,5 +1,5 @@
 ---
-title: "COVID-19 no Mundo, no Brasil e em Pernambuco"
+title: "COVID-19 em Dados"
 output:
    flexdashboard::flex_dashboard:
     orientation: rows
@@ -12,6 +12,11 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+
+gc()
+
+# options(java.parameters = c("-XX:+UseConcMarkSweepGC", "-Xmx8192m"))
+
 library(leaflet)
 library(ggplot2)
 library(emojifont)
@@ -29,7 +34,9 @@ library(ggthemes)
 library(sjPlot)
 library(readxl)
 library(kableExtra)
+
 library(xlsx)
+
 library(reshape2)
 library(htmltools)
 library(htmlwidgets)
@@ -62,7 +69,7 @@ library(dplyr)
 library(sp)
 library(spdep)
 library(leaflet.extras)
-library(mullenMisc)
+# library(mullenMisc)
 library(arules)
 
 source('./global_regulador.R')
@@ -87,11 +94,11 @@ confirmados$evolucao <- ifelse(confirmados$evolucao == 'RECUPERADO', 'RECUPERADO
 
 confirmados.split <- split(confirmados, confirmados$evolucao)
 
-confirmados$latJ <- jitter_latlong(confirmados$lat, type = "lat", km = 50/1000)
-confirmados$lngJ <- jitter_latlong(confirmados$lng, type = "long", lat = -35, km = 50/1000)
+#confirmados$latJ <- jitter_latlong(confirmados$lat, type = "lat", km = 50/1000)
+#confirmados$lngJ <- jitter_latlong(confirmados$lng, type = "long", lat = -35, km = 50/1000)
 
-confirmadosJ <- confirmados[,c(3,6,7)]
-colnames(confirmadosJ)[c(2,3)] <- c('lat', 'lng')
+#confirmadosJ <- confirmados[,c(3,6,7)]
+#colnames(confirmadosJ)[c(2,3)] <- c('lat', 'lng')
 
 confirmados_rec <- subset(confirmados, nm_municipio == 'RECIFE' & lat >= -8.16 & lat <= -7.93 & lng >= -35.1 & lng <= -34.85)
 
@@ -105,12 +112,16 @@ confirmados_jaboatao <- subset(confirmados, nm_municipio == 'JABOATÃO DOS GUARA
 
 confirmados_jaboatao_bkde <- confirmados_jaboatao[, c('lng', 'lat')]
 
-fontes <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 1)
+# fontes <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 1)
+
+fontes <- read.csv2("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.csv", sep = ";", encoding = 'UTF-8') # carregar base vigilancia
 
 fontes <- fontes[, 1:4]
 fontes <- subset(fontes, Tipo == 'Dados')
 
-metadados <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 6)
+# metadados <- read_excel("C:/Users/hugo.vasconcelos/ownCloud2/Corona/COVID-19-Bases.xlsx", sheet = 6)
+
+metadados <- read.csv2("C:/Users/hugo.vasconcelos/ownCloud2/Corona/metadados_corona.csv", sep = ";", encoding = 'UTF-8') # carregar base vigilancia
 
 basevig <- read.csv2('C:/Users/hugo.vasconcelos/ownCloud2/Corona/Bases/pernambuco/resultado/base_vig.csv', sep = ';')
 
@@ -122,7 +133,9 @@ basevig$dt_notificacao <- as.Date(basevig$dt_notificacao, format = "%d/%m/%y")
 basevig$dt_obito <- as.Date(basevig$dt_obito, format = "%d/%m/%y")
 basevig$dt_primeiros_sintomas <- as.Date(basevig$dt_primeiros_sintomas, format = "%d/%m/%y")
 
-evolucao_geral <- read.xlsx('../pernambuco/bases/evolucao geral.xlsx', sheetIndex = 1)
+# evolucao_geral <- read.xlsx('../pernambuco/bases/evolucao geral.xlsx', sheetIndex = 1)
+
+evolucao_geral <- read.csv2("../pernambuco/bases/evolucao geral.csv", sep = ";", encoding = 'UTF-8') # carregar base vigilancia
 
 evolucao_geral[, 5] <- round(evolucao_geral[, 5], 3)
 evolucao_geral[, 7] <- round(evolucao_geral[, 7], 3)
@@ -673,7 +686,7 @@ Row {data-height=100}
 valueBox(covid_prisional_susp %>% filter(data_id <= max_dt_id) %>% summarize(total = sum(pris_susp)))
 ```
 
-### Suspeitos em Isolamento
+### Suspeitos em Isolamento na UP
 
 ```{r}
 
@@ -681,7 +694,7 @@ valueBox(covid_prisional_susp %>% filter(situacao == 'ISOLAMENTO NA UP' & data_i
 
 ```
 
-### Suspeitos em Convívio no Pavilhão
+### Suspeitos em Convívio na UP
 
 ```{r}
   valueBox(covid_prisional_susp %>% filter(situacao == 'CONVIVIO NO PAVILHAO' & data_id <= max_dt_id) %>% summarize(total = sum(pris_susp)))
@@ -791,13 +804,31 @@ Row {data-height=100}
 ### Testes Disponíveis - RT-PCR
 
 ```{r}
- valueBox(testes_dsp <- base_testes_dsp %>% filter(dt_referencia==max_dt_dsp) %>%  summarise(cont = sum(rt_pcr_dsp)))
+  testes_dsp <- base_testes_dsp %>% filter(dt_referencia==max_dt_dsp) %>% summarise(cont = sum(rt_pcr_dsp)) 
+  valueBox(format(testes_dsp, big.mark="."))
 ```
 
 ### Testes Disponíveis - RÁPIDO
 
 ```{r}
- valueBox(testes_dsp <- base_testes_dsp %>% filter(dt_referencia==max_dt_dsp) %>%  summarise(cont = sum(rapido_dsp)))
+  testes_dsp <- base_testes_dsp %>% filter(dt_referencia==max_dt_dsp) %>%  summarise(cont = sum(rapido_dsp)) 
+  valueBox(format(testes_dsp, big.mark="."))
+```
+
+Row {data-height=100}
+-------------------------------------
+
+### Capacidade Semanal Pública
+
+```{r}
+  valor_caixa <- grafico_capacidade_ult %>% dplyr::filter(tipo_lab  == 'Público') %>% dplyr::pull(total)
+ valueBox( format( valor_caixa, big.mark="."))
+```
+
+### Capacidade Semanal Privada
+
+```{r}
+valueBox(grafico_capacidade_ult %>%  filter(tipo_lab  == 'Privado') %>% summarise(sum(total))  )
 ```
 
 Row {data-height=100}
@@ -901,3 +932,35 @@ Row {.tabset .tabset-fade data-height=500}
   evol_solicitacao
 
 ```
+
+Metadados {data-icon="fa-info"}
+=====================================
+
+Row {data-height=80} <!--- Info UTI -->
+-------------------------------------
+
+### Dados | Fontes de Dados
+
+* Casos confirmados, casos fatais e recuperados em Pernambuco: CIEVS/NUVRESP/SEVS/ Secretaria de Saúde de Pernambuco - SES/PE
+* Casos confirmados, casos fatais e recuperados no Brasil: UFV e Ministério da Saúde
+* Casos confirmados, casos fatais e recuperados no mundo: Johns Hopkins University
+* Dados de Regulação SRAG: Secretaria Executiva de Regulação - SERS/SES-PE
+* Dados do Sistema Prisional: Secretaria Executiva de Ressocialização de Pernambuco - SERES/SJDH - PE
+* Dados de Testes: Secretaria Executiva de Vigilância em Saúde - SEVS/SES - PE
+
+
+Row {data-height=80} <!--- Info UTI -->
+-------------------------------------
+
+### Dicionario de Dados
+  * **Casos Confirmados** - quantidade total de casos de COVID-19 confirmados através de testagem em Pernambuco.
+  * **Casos Descartados** - quantidade total de casos que, após investigação para COVID-19 através de testagem, tiveram resultados negativos.
+  * **Casos Suspeitos** - quantidade total de casos que apresentam sintomas típicos de COVID-19, tais como: febre, tosse, falta de ar, mas que não têm diagnóstico da doença feitos através da testagem.
+  * **Óbitos** - quantidade total de pessoas que testaram positivo e faleceram em decorrência da COVID - 19.
+  * **Leitos Totais** - Quantidade total de  leitos existentes no Estado de Pernambuco. Divide-se em Leitos Totais de UTI em Pernambuco e Leitos Totais de Enfermaria em Pernambuco.Engloba todos os tipos de leitos.
+  * **Ocupação Total** - Taxa de ocupação total de leitos em Pernambuco. É calculada pela soma dos leitos ocupados e reservados dividido pela quantidade de leitos disponíveis. O cálculo engloba todos os tipos de leitos, inclusive os autogeridos. Divide-se em Ocupação UTI Pernambuco e Ocupação Enfermaria Pernambuco.
+  * **Solicitacoes Ativas** - Quantidade total de solicitações ja reguladas, em fila, aguardando disponibilidade de leito. Divide-se em Solicitações ativas para UTI e seus tipos e Solicitações ativas para Enfermaria e seus tipos.
+  * **População Privada de Liberdade** - Quantidade total de pessoas privadas de liberdade em Pernambuco nas condições de suspeitos, suspeitos em isolamento ou em convívio em pavilhão,  confimados, óbitos e recuperados da doença.
+  * **Capacidade de Testagem** - quantidade de testes que reflete a capacidade para testagem semanal de cada laboratório
+  * **Testes Aplicados** - quantidade de testes que forma realizados no período de tempo.
+  * **Testes Disponíveis** - quantidade de testes disponíveis em laboratório. 

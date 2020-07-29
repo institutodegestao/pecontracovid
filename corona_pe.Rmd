@@ -11,6 +11,11 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+
+gc()
+
+# options(java.parameters = c("-XX:+UseConcMarkSweepGC", "-Xmx8192m"))
+
 library(ggplot2)
 library(emojifont)
 library(sjPlot)
@@ -27,7 +32,9 @@ library(ggthemes)
 library(sjPlot)
 library(readxl)
 library(kableExtra)
+
 library(xlsx)
+
 library(reshape2)
 library(htmltools)
 library(htmlwidgets)
@@ -39,7 +46,9 @@ library(tidyr)
 library(incidence)
 library(flexdashboard)
 
-evolucao_geral <- read.xlsx('../pernambuco/bases/evolucao geral.xlsx', 1)
+# evolucao_geral <- read.xlsx('../pernambuco/bases/evolucao geral.xlsx', 1)
+
+evolucao_geral <- read.csv2("../pernambuco/bases/evolucao geral.csv", sep = ";", encoding = 'UTF-8') # carregar base vigilancia
 
 evolucao_geral$dt_referencia <- as.Date(evolucao_geral$dt_referencia, format = "%d/%m/%y")
 
